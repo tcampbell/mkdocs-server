@@ -19,6 +19,7 @@ var pageTmpl = template.Must(
 type pageData struct {
 	SiteName   string
 	PageTitle  string
+	Base       string        // relative path from this page to site root (e.g. "." or "..")
 	Content    template.HTML
 	Nav        template.HTML
 	ExtraCSS   []string
@@ -47,7 +48,7 @@ func buildConfigJSON(base string, features []string) template.JS {
 	cfg := materialConfig{
 		Base:         base,
 		Features:     features,
-		Search:       "/_assets/javascripts/workers/search.min.js",
+		Search:       base + "/_assets/javascripts/workers/search.min.js",
 		Translations: map[string]string{},
 		Version:      nil,
 	}

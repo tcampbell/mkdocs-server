@@ -4,9 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>{{.PageTitle}} - {{.SiteName}}</title>
-    <link rel="icon" href="/_assets/images/favicon.png" />
-    <link rel="stylesheet" href="/_assets/stylesheets/main.min.css" />
-    <link rel="stylesheet" href="/_assets/stylesheets/palette.min.css" />
+    <link rel="icon" href="{{.Base}}/_assets/images/favicon.png" />
+    <link rel="stylesheet" href="{{.Base}}/_assets/stylesheets/main.min.css" />
+    <link rel="stylesheet" href="{{.Base}}/_assets/stylesheets/palette.min.css" />
     {{range .ExtraCSS}}<link rel="stylesheet" href="{{.}}" />
     {{end}}</head>
   <body
@@ -135,6 +135,6 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     <script id="__config" type="application/json">{{.ConfigJSON}}</script>
-    <script src="/_assets/javascripts/bundle.min.js"></script>
+    <script src="{{.Base}}/_assets/javascripts/bundle.min.js"></script>
   </body>
 </html>

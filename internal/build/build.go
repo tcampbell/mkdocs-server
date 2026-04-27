@@ -122,6 +122,7 @@ func processPage(cfg *config.Config, docsDir, siteDir, relMDPath string) (search
 	data := pageData{
 		SiteName:   cfg.SiteName,
 		PageTitle:  title,
+		Base:       base,
 		Content:    template.HTML(contentStr), //nolint:gosec — content rendered from trusted local files
 		Nav:        nav,
 		ExtraCSS:   cfg.ExtraCSS,
