@@ -6,6 +6,7 @@ on:
     paths:
       - "cmd/**"
       - "internal/**"
+      - "scaffold/**"
       - "go.mod"
       - "go.sum"
 
@@ -45,4 +46,7 @@ jobs:
             mkdocs-server-darwin-arm64 \
             mkdocs-server-darwin-amd64 \
             mkdocs-server-linux-amd64 \
-            mkdocs-server-windows-amd64.exe
+            mkdocs-server-windows-amd64.exe \
+            scaffold/serve/main.go \
+            scaffold/serve/go.mod \
+            scaffold/base.mkdocs.yml
