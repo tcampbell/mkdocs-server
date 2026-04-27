@@ -12,4 +12,5 @@ clean:
 	rm -f $(BIN) mkdocs-server-*
 
 install: build
-	cp $(BIN) /usr/local/bin/$(BIN)
+	install -d ~/.local/bin
+	cp $(BIN) ~/.local/bin/$(BIN)
