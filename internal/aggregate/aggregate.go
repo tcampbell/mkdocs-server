@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/tcampbell/mkdocs-server/internal/config"
 )
@@ -32,6 +33,12 @@ func (r *Result) Cleanup() {
 // temporary directory, and merges nav entries.
 // Sources that fail to clone hard-fail the build.
 func Aggregate(sources []config.Source) (*Result, error) {
+	for _, s := range sources {
+		if err := validateSource(s); err != nil {
+			return nil, err
+		}
+	}
+
 	tempDir, err := os.MkdirTemp("", "mkdocs-server-*")
 	if err != nil {
 		return nil, fmt.Errorf("create temp dir: %w", err)
@@ -49,14 +56,18 @@ func Aggregate(sources []config.Source) (*Result, error) {
 			return nil, fmt.Errorf("clone source %q: %w", source.Name, err)
 		}
 
-		srcDocsDir := filepath.Join(repoDir, filepath.FromSlash(source.DocsDir))
+		docsPath := source.DocsDir
+		if docsPath == "" {
+			docsPath = "docs"
+		}
+		srcDocsDir := filepath.Join(repoDir, filepath.FromSlash(docsPath))
 		dstDocsDir := filepath.Join(docsDir, source.Name)
 		if err := copyDir(srcDocsDir, dstDocsDir); err != nil {
 			os.RemoveAll(tempDir)
 			return nil, fmt.Errorf("copy docs for source %q: %w", source.Name, err)
 		}
 
-		children := sourceNav(source, repoDir)
+		children := sourceNav(source, repoDir, docsPath)
 		mergedNav = append(mergedNav, config.NavItem{
 			Title:    source.Name,
 			Children: children,
@@ -70,15 +81,35 @@ func Aggregate(sources []config.Source) (*Result, error) {
 	}, nil
 }
 
+// validateSource rejects name values that would escape the temp directory
+// and repo URLs that use potentially dangerous schemes.
+func validateSource(s config.Source) error {
+	if strings.Contains(s.Name, "/") || strings.Contains(s.Name, "\\") || strings.Contains(s.Name, "..") {
+		return fmt.Errorf("source name %q must not contain path separators or ..", s.Name)
+	}
+	if s.Name == "" {
+		return fmt.Errorf("source name must not be empty")
+	}
+	if !strings.HasPrefix(s.Repo, "https://") && !strings.HasPrefix(s.Repo, "git@") && !strings.HasPrefix(s.Repo, "ssh://") {
+		return fmt.Errorf("source %q: repo URL must begin with https://, git@, or ssh://", s.Name)
+	}
+	return nil
+}
+
 // sourceNav reads the source repo's mkdocs.yml (searched adjacent to docs_dir)
 // and returns its nav items prefixed with the source name.
-func sourceNav(source config.Source, repoDir string) []config.NavItem {
-	docsAbs := filepath.Join(repoDir, filepath.FromSlash(source.DocsDir))
+func sourceNav(source config.Source, repoDir, docsPath string) []config.NavItem {
+	docsAbs := filepath.Join(repoDir, filepath.FromSlash(docsPath))
 	// mkdocs.yml conventionally lives one level above docs_dir
 	cfgPath := filepath.Join(filepath.Dir(docsAbs), "mkdocs.yml")
 
 	if _, err := os.Stat(cfgPath); err == nil {
-		if cfg, err := config.Load(cfgPath); err == nil && len(cfg.Nav) > 0 {
+		cfg, err := config.Load(cfgPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "warning: cannot read nav from %s: %v\n", cfgPath, err)
+			return nil
+		}
+		if len(cfg.Nav) > 0 {
 			return prefixNav(cfg.Nav, source.Name+"/")
 		}
 	}
@@ -87,6 +118,9 @@ func sourceNav(source config.Source, repoDir string) []config.NavItem {
 
 // prefixNav prepends prefix to every leaf path in a nav tree.
 func prefixNav(items []config.NavItem, prefix string) []config.NavItem {
+	if len(items) == 0 {
+		return nil
+	}
 	result := make([]config.NavItem, len(items))
 	for i, item := range items {
 		result[i] = item
@@ -138,7 +172,9 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer out.Close()
-	_, err = io.Copy(out, in)
-	return err
+	defer func() { out.Close() }()
+	if _, err = io.Copy(out, in); err != nil {
+		return err
+	}
+	return out.Sync()
 }
