@@ -22,22 +22,25 @@ func navPathToURL(mdPath string) string {
 var navCounter int
 
 // RenderNav returns the <ul> block for the primary navigation sidebar.
-func RenderNav(items []config.NavItem, currentURL string) template.HTML {
+// currentOutputRel is the site-relative path of the page being rendered
+// (e.g. "index.html" or "okr-framework/overview.html") and is used to
+// compute relative hrefs so the site works at any URL prefix.
+func RenderNav(items []config.NavItem, currentURL string, currentOutputRel string) template.HTML {
 	navCounter = 0
-	return template.HTML(renderNavItems(items, currentURL, 0))
+	return template.HTML(renderNavItems(items, currentURL, currentOutputRel, 0))
 }
 
-func renderNavItems(items []config.NavItem, currentURL string, level int) string {
+func renderNavItems(items []config.NavItem, currentURL, currentOutputRel string, level int) string {
 	var sb strings.Builder
 	sb.WriteString(`<ul class="md-nav__list">`)
 	for _, item := range items {
-		sb.WriteString(renderNavItem(item, currentURL, level))
+		sb.WriteString(renderNavItem(item, currentURL, currentOutputRel, level))
 	}
 	sb.WriteString(`</ul>`)
 	return sb.String()
 }
 
-func renderNavItem(item config.NavItem, currentURL string, level int) string {
+func renderNavItem(item config.NavItem, currentURL, currentOutputRel string, level int) string {
 	if len(item.Children) == 0 {
 		// Leaf
 		url := navPathToURL(item.Path)
@@ -47,7 +50,7 @@ func renderNavItem(item config.NavItem, currentURL string, level int) string {
 		}
 		return fmt.Sprintf(
 			`<li class="md-nav__item"><a href="%s" class="md-nav__link%s">%s</a></li>`,
-			template.HTMLEscapeString("/"+url),
+			template.HTMLEscapeString(relNavHref(currentOutputRel, url)),
 			active,
 			template.HTMLEscapeString(item.Title),
 		)
@@ -64,7 +67,7 @@ func renderNavItem(item config.NavItem, currentURL string, level int) string {
 	}
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf(`<li class="md-nav__item md-nav__item--section">`, ))
+	sb.WriteString(fmt.Sprintf(`<li class="md-nav__item md-nav__item--section">`))
 	sb.WriteString(fmt.Sprintf(`<input class="md-nav__toggle md-toggle" type="checkbox" id="%s"%s>`, id, checked))
 	sb.WriteString(fmt.Sprintf(
 		`<label class="md-nav__link" for="%s"><span class="md-ellipsis">%s</span></label>`,
@@ -75,9 +78,20 @@ func renderNavItem(item config.NavItem, currentURL string, level int) string {
 		template.HTMLEscapeString(item.Title), level+1))
 	sb.WriteString(fmt.Sprintf(`<label class="md-nav__title" for="%s">%s</label>`,
 		id, template.HTMLEscapeString(item.Title)))
-	sb.WriteString(renderNavItems(item.Children, currentURL, level+1))
+	sb.WriteString(renderNavItems(item.Children, currentURL, currentOutputRel, level+1))
 	sb.WriteString(`</nav></li>`)
 	return sb.String()
+}
+
+// relNavHref returns a relative href from the current page to the target page,
+// both expressed as site-relative paths (e.g. "okr-framework/overview.html").
+func relNavHref(currentOutputRel, target string) string {
+	currentDir := filepath.ToSlash(filepath.Dir(currentOutputRel))
+	rel, err := filepath.Rel(currentDir, target)
+	if err != nil {
+		return target
+	}
+	return filepath.ToSlash(rel)
 }
 
 func sectionContainsActive(items []config.NavItem, currentURL string) bool {

@@ -116,7 +116,7 @@ func processPage(cfg *config.Config, docsDir, siteDir, relMDPath string) (search
 	}
 
 	currentURL := "/" + outputRel
-	nav := RenderNav(cfg.Nav, currentURL)
+	nav := RenderNav(cfg.Nav, currentURL, outputRel)
 	base := computeBase(outputRel)
 
 	data := pageData{
