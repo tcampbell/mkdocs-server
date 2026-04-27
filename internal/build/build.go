@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/tcampbell/mkdocs-server/internal/aggregate"
 	"github.com/tcampbell/mkdocs-server/internal/assets"
 	"github.com/tcampbell/mkdocs-server/internal/config"
 )
@@ -23,6 +24,21 @@ func Build(configPath string) error {
 	// Resolve docs and site dirs relative to the config file location.
 	docsDir := filepath.Join(cfg.ConfigDir, cfg.DocsDir)
 	siteDir := filepath.Join(cfg.ConfigDir, cfg.SiteDir)
+
+	// Multi-repo aggregation: when sources are defined, clone each source repo
+	// and assemble a unified docs directory. The normal build pipeline then runs
+	// against that directory using the merged nav.
+	if len(cfg.Sources) > 0 {
+		result, err := aggregate.Aggregate(cfg.Sources)
+		if err != nil {
+			return err
+		}
+		defer result.Cleanup()
+		docsDir = result.DocsDir
+		if len(cfg.Nav) == 0 {
+			cfg.Nav = result.Nav
+		}
+	}
 
 	if err := os.MkdirAll(siteDir, 0o755); err != nil {
 		return fmt.Errorf("create site dir: %w", err)
