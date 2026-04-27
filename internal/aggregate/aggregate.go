@@ -10,9 +10,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/tcampbell/mkdocs-server/internal/config"
+)
+
+var (
+	validName = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+	validRef  = regexp.MustCompile(`^[A-Za-z0-9_./-]+$`)
 )
 
 // Result holds the merged docs directory and nav produced by Aggregate.
@@ -81,17 +87,23 @@ func Aggregate(sources []config.Source) (*Result, error) {
 	}, nil
 }
 
-// validateSource rejects name values that would escape the temp directory
-// and repo URLs that use potentially dangerous schemes.
+// validateSource rejects names or refs that could cause path traversal or
+// flag injection, and limits repo URLs to known safe schemes.
 func validateSource(s config.Source) error {
-	if strings.Contains(s.Name, "/") || strings.Contains(s.Name, "\\") || strings.Contains(s.Name, "..") {
-		return fmt.Errorf("source name %q must not contain path separators or ..", s.Name)
-	}
 	if s.Name == "" {
 		return fmt.Errorf("source name must not be empty")
 	}
+	if !validName.MatchString(s.Name) {
+		return fmt.Errorf("source name %q must contain only letters, digits, hyphens, and underscores", s.Name)
+	}
 	if !strings.HasPrefix(s.Repo, "https://") && !strings.HasPrefix(s.Repo, "git@") && !strings.HasPrefix(s.Repo, "ssh://") {
 		return fmt.Errorf("source %q: repo URL must begin with https://, git@, or ssh://", s.Name)
+	}
+	if s.Ref == "" {
+		return fmt.Errorf("source %q: ref must not be empty", s.Name)
+	}
+	if !validRef.MatchString(s.Ref) {
+		return fmt.Errorf("source %q: ref %q contains invalid characters", s.Name, s.Ref)
 	}
 	return nil
 }
@@ -153,6 +165,10 @@ func copyDir(src, dst string) error {
 		if err != nil {
 			return err
 		}
+		// Skip symlinks — a symlink in a cloned repo could point outside the repo tree.
+		if d.Type()&fs.ModeSymlink != 0 {
+			return nil
+		}
 		rel, _ := filepath.Rel(src, path)
 		dstPath := filepath.Join(dst, rel)
 		if d.IsDir() {
@@ -172,9 +188,13 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer func() { out.Close() }()
 	if _, err = io.Copy(out, in); err != nil {
+		out.Close()
 		return err
 	}
-	return out.Sync()
+	if err = out.Sync(); err != nil {
+		out.Close()
+		return err
+	}
+	return out.Close()
 }
