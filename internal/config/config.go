@@ -8,6 +8,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Source defines a remote git repo whose content is aggregated into the build.
+type Source struct {
+	Name    string `yaml:"name"`    // namespace prefix in the merged docs tree
+	Repo    string `yaml:"repo"`    // remote URL, e.g. https://github.com/org/repo
+	Ref     string `yaml:"ref"`     // branch, tag, or commit-ish
+	DocsDir string `yaml:"docs_dir"` // path within the repo to the markdown content
+}
+
 type Config struct {
 	SiteName  string `yaml:"site_name"`
 	SiteURL   string `yaml:"site_url"`
@@ -20,6 +28,7 @@ type Config struct {
 	ExtraCSS []string  `yaml:"extra_css"`
 	Nav      []NavItem `yaml:"-"`
 	Inherit  string    `yaml:"INHERIT"`
+	Sources  []Source  `yaml:"sources"`
 
 	// directory containing the config file — used to resolve relative paths
 	ConfigDir string `yaml:"-"`
@@ -44,6 +53,7 @@ type rawConfig struct {
 	ExtraCSS []string `yaml:"extra_css"`
 	Nav      []any    `yaml:"nav"`
 	Inherit  string   `yaml:"INHERIT"`
+	Sources  []Source `yaml:"sources"`
 }
 
 func Load(configPath string) (*Config, error) {
@@ -77,6 +87,7 @@ func load(absPath string, seen map[string]bool) (*Config, error) {
 		SiteDir:   raw.SiteDir,
 		ExtraCSS:  raw.ExtraCSS,
 		Inherit:   raw.Inherit,
+		Sources:   raw.Sources,
 		ConfigDir: filepath.Dir(absPath),
 	}
 	cfg.Theme.Name = raw.Theme.Name
