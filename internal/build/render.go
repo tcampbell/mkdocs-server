@@ -31,7 +31,22 @@ var md = goldmark.New(
 func renderMarkdown(src string) string {
 	src = preprocessCallouts(src)
 	src = preprocessTabs(src)
-	return renderRaw(src)
+	return rewriteMDLinks(renderRaw(src))
+}
+
+// mdLinkRe matches href="..." attributes whose value ends in .md and has no scheme.
+var mdLinkRe = regexp.MustCompile(`href="([^"]*\.md)"`)
+
+// rewriteMDLinks rewrites relative .md hrefs to .html in rendered HTML output,
+// so in-content markdown links like [text](page.md) resolve to the built files.
+func rewriteMDLinks(s string) string {
+	return mdLinkRe.ReplaceAllStringFunc(s, func(match string) string {
+		href := match[6 : len(match)-1] // strip href=" and trailing "
+		if strings.Contains(href, "://") {
+			return match // leave external URLs alone
+		}
+		return `href="` + href[:len(href)-3] + `.html"`
+	})
 }
 
 // renderBodyMarkdown renders a markdown fragment without callout/tab preprocessing,
