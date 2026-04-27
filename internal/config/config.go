@@ -64,6 +64,20 @@ func Load(configPath string) (*Config, error) {
 	return load(abs, map[string]bool{})
 }
 
+// LoadNavOnly parses only the nav from configPath without following INHERIT.
+// It is safe to call on untrusted configs (e.g. from cloned source repos).
+func LoadNavOnly(configPath string) ([]NavItem, error) {
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("read config %s: %w", configPath, err)
+	}
+	var raw rawConfig
+	if err := yaml.Unmarshal(data, &raw); err != nil {
+		return nil, fmt.Errorf("parse config %s: %w", configPath, err)
+	}
+	return parseNav(raw.Nav), nil
+}
+
 func load(absPath string, seen map[string]bool) (*Config, error) {
 	if seen[absPath] {
 		return nil, fmt.Errorf("INHERIT cycle detected: %s", absPath)

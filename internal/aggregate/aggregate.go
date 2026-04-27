@@ -67,6 +67,12 @@ func Aggregate(sources []config.Source) (*Result, error) {
 			docsPath = "docs"
 		}
 		srcDocsDir := filepath.Join(repoDir, filepath.FromSlash(docsPath))
+		// Ensure docs_dir cannot escape the clone root via .. segments.
+		repoBound := repoDir + string(filepath.Separator)
+		if srcDocsDir != repoDir && !strings.HasPrefix(srcDocsDir+string(filepath.Separator), repoBound) {
+			os.RemoveAll(tempDir)
+			return nil, fmt.Errorf("source %q: docs_dir %q escapes repo root", source.Name, docsPath)
+		}
 		dstDocsDir := filepath.Join(docsDir, source.Name)
 		if err := copyDir(srcDocsDir, dstDocsDir); err != nil {
 			os.RemoveAll(tempDir)
@@ -110,19 +116,21 @@ func validateSource(s config.Source) error {
 
 // sourceNav reads the source repo's mkdocs.yml (searched adjacent to docs_dir)
 // and returns its nav items prefixed with the source name.
+// Uses LoadNavOnly so INHERIT directives in the source config are not followed —
+// a malicious source cannot use INHERIT to read host files outside the clone.
 func sourceNav(source config.Source, repoDir, docsPath string) []config.NavItem {
 	docsAbs := filepath.Join(repoDir, filepath.FromSlash(docsPath))
 	// mkdocs.yml conventionally lives one level above docs_dir
 	cfgPath := filepath.Join(filepath.Dir(docsAbs), "mkdocs.yml")
 
 	if _, err := os.Stat(cfgPath); err == nil {
-		cfg, err := config.Load(cfgPath)
+		nav, err := config.LoadNavOnly(cfgPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "warning: cannot read nav from %s: %v\n", cfgPath, err)
 			return nil
 		}
-		if len(cfg.Nav) > 0 {
-			return prefixNav(cfg.Nav, source.Name+"/")
+		if len(nav) > 0 {
+			return prefixNav(nav, source.Name+"/")
 		}
 	}
 	return nil
