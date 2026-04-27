@@ -67,7 +67,7 @@ func renderNavItem(item config.NavItem, currentURL, currentOutputRel string, lev
 	}
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf(`<li class="md-nav__item md-nav__item--section">`))
+	sb.WriteString(fmt.Sprintf(`<li class="md-nav__item md-nav__item--nested">`))
 	sb.WriteString(fmt.Sprintf(`<input class="md-nav__toggle md-toggle" type="checkbox" id="%s"%s>`, id, checked))
 	sb.WriteString(fmt.Sprintf(
 		`<label class="md-nav__link" for="%s"><span class="md-ellipsis">%s</span></label>`,
