@@ -21,6 +21,7 @@ type pageData struct {
 	PageTitle  string
 	Content    template.HTML
 	Nav        template.HTML
+	ExtraCSS   []string
 	ConfigJSON template.JS // raw JSON for <script id="__config">
 }
 

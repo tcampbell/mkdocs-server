@@ -47,14 +47,27 @@ type rawConfig struct {
 }
 
 func Load(configPath string) (*Config, error) {
-	data, err := os.ReadFile(configPath)
+	abs, err := filepath.Abs(configPath)
 	if err != nil {
-		return nil, fmt.Errorf("read config %s: %w", configPath, err)
+		return nil, err
+	}
+	return load(abs, map[string]bool{})
+}
+
+func load(absPath string, seen map[string]bool) (*Config, error) {
+	if seen[absPath] {
+		return nil, fmt.Errorf("INHERIT cycle detected: %s", absPath)
+	}
+	seen[absPath] = true
+
+	data, err := os.ReadFile(absPath)
+	if err != nil {
+		return nil, fmt.Errorf("read config %s: %w", absPath, err)
 	}
 
 	var raw rawConfig
 	if err := yaml.Unmarshal(data, &raw); err != nil {
-		return nil, fmt.Errorf("parse config %s: %w", configPath, err)
+		return nil, fmt.Errorf("parse config %s: %w", absPath, err)
 	}
 
 	cfg := &Config{
@@ -64,7 +77,7 @@ func Load(configPath string) (*Config, error) {
 		SiteDir:   raw.SiteDir,
 		ExtraCSS:  raw.ExtraCSS,
 		Inherit:   raw.Inherit,
-		ConfigDir: filepath.Dir(configPath),
+		ConfigDir: filepath.Dir(absPath),
 	}
 	cfg.Theme.Name = raw.Theme.Name
 	cfg.Theme.Features = raw.Theme.Features
@@ -72,7 +85,11 @@ func Load(configPath string) (*Config, error) {
 
 	if raw.Inherit != "" {
 		basePath := filepath.Join(cfg.ConfigDir, raw.Inherit)
-		base, err := Load(basePath)
+		absBase, err := filepath.Abs(basePath)
+		if err != nil {
+			return nil, err
+		}
+		base, err := load(absBase, seen)
 		if err != nil {
 			return nil, fmt.Errorf("load inherited config %s: %w", basePath, err)
 		}

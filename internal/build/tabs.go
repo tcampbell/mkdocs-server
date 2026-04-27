@@ -2,6 +2,7 @@ package build
 
 import (
 	"fmt"
+	"html/template"
 	"regexp"
 	"strings"
 )
@@ -95,7 +96,7 @@ func buildTabSetHTML(tabs []tab, setID int) string {
 
 	sb.WriteString(`<div class="tabbed-labels">`)
 	for i, t := range tabs {
-		sb.WriteString(fmt.Sprintf(`<label for="__tabbed_%d_%d">%s</label>`, setID, i+1, t.name))
+		sb.WriteString(fmt.Sprintf(`<label for="__tabbed_%d_%d">%s</label>`, setID, i+1, template.HTMLEscapeString(t.name)))
 	}
 	sb.WriteString(`</div>`)
 	sb.WriteString(`</div>`)

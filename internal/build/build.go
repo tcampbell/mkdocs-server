@@ -108,6 +108,7 @@ func processPage(cfg *config.Config, docsDir, siteDir, relMDPath string) (search
 		PageTitle:  title,
 		Content:    template.HTML(contentStr), //nolint:gosec — content rendered from trusted local files
 		Nav:        nav,
+		ExtraCSS:   cfg.ExtraCSS,
 		ConfigJSON: buildConfigJSON(base, cfg.Theme.Features),
 	}
 
