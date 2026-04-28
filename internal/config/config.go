@@ -10,18 +10,18 @@ import (
 
 // Source defines a remote git repo whose content is aggregated into the build.
 type Source struct {
-	Name    string `yaml:"name"`    // namespace prefix in the merged docs tree
-	Repo    string `yaml:"repo"`    // remote URL, e.g. https://github.com/org/repo
-	Ref     string `yaml:"ref"`     // branch, tag, or commit-ish
+	Name    string `yaml:"name"`     // namespace prefix in the merged docs tree
+	Repo    string `yaml:"repo"`     // remote URL, e.g. https://github.com/org/repo
+	Ref     string `yaml:"ref"`      // branch, tag, or commit-ish
 	DocsDir string `yaml:"docs_dir"` // path within the repo to the markdown content
 }
 
 type Config struct {
-	SiteName  string `yaml:"site_name"`
-	SiteURL   string `yaml:"site_url"`
-	DocsDir   string `yaml:"docs_dir"`
-	SiteDir   string `yaml:"site_dir"`
-	Theme     struct {
+	SiteName string `yaml:"site_name"`
+	SiteURL  string `yaml:"site_url"`
+	DocsDir  string `yaml:"docs_dir"`
+	SiteDir  string `yaml:"site_dir"`
+	Theme    struct {
 		Name     string   `yaml:"name"`
 		Features []string `yaml:"features"`
 	} `yaml:"theme"`

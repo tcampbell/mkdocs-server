@@ -19,7 +19,7 @@ var pageTmpl = template.Must(
 type pageData struct {
 	SiteName   string
 	PageTitle  string
-	Base       string        // relative path from this page to site root (e.g. "." or "..")
+	Base       string // relative path from this page to site root (e.g. "." or "..")
 	Content    template.HTML
 	Nav        template.HTML
 	ExtraCSS   []string
