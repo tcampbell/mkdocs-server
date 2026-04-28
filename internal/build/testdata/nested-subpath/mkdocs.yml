@@ -1,0 +1,13 @@
+site_name: Nested Subpath Fixture
+site_url: https://example.com/sub-path/
+
+docs_dir: docs
+site_dir: site
+
+nav:
+  - Home: index.md
+  - Section A:
+      - Overview: section-a/overview.md
+      - Detail: section-a/detail.md
+  - Section B:
+      - Overview: section-b/overview.md

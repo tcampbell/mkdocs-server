@@ -1,0 +1,6 @@
+_assets/images/favicon.png
+_assets/javascripts/bundle.min.js
+_assets/javascripts/workers/search.min.js
+_assets/stylesheets/main.min.css
+_assets/stylesheets/overrides.min.css
+_assets/stylesheets/palette.min.css
