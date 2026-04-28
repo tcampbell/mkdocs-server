@@ -1,0 +1,1 @@
+.md-search__icon[type=reset]{position:absolute;top:.6rem;right:.8rem;z-index:2;transform:scale(.125);opacity:0;transition:transform .15s cubic-bezier(.1,.7,.1,1),opacity .15s}.md-search__form>.md-search__input:valid~.md-search__icon[type=reset]{transform:scale(1);opacity:1;pointer-events:initial}
